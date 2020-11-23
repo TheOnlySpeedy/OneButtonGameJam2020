@@ -1,208 +1,116 @@
 using System;
+using Interfaces;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, ICanTeleportInterface
 {
-    private InputMaster _controls;
-    
-    private bool _isTapped;
-    private bool _isHolding;
+    private PlayerInput _playerInput;
+    private PlayerMovement _playerMovement;
 
-    // Double Tap Action
-    private float _tapTime;
-    private const float DoubleTapTime = 0.3f;
-    
-    private float _doubleTapWait = 0;
-    private const float DoubleTapWaitThreshold = 0.4f;
-    private bool _isDoubleTaping;
-
-    // Hold Action
-    private float _heldTime;
-    private const float HeldTimeThreshold = 0.4f;
-
-    [SerializeField]
+    [SerializeField] 
     private bool _performingAction;
-    [SerializeField]
-    private bool _moveForward = false;
-    [SerializeField]
-    private bool _rotate = false;
+    public bool PerformingAction
+    {
+        get => _performingAction;
+        set => _performingAction = value;
+    }
 
-    private float _moveSpeed = 3f;
-    private float _rotateSpeed = 180f; // rotation degree per second
-    [SerializeField]
-    private Vector3 _moveDestination;
-    [SerializeField]
-    private Quaternion _rotationTarget;
+    public Vector3 RayCastCenter { get; set; }
+    
+    [SerializeField] 
+    private bool _canMoveForward;
+    public bool CanMoveForward
+    {
+        get => _canMoveForward;
+        set => _canMoveForward = value;
+    }
+
+    [SerializeField] 
+    private bool _canAttack;
+    public bool CanAttack
+    {
+        get => _canAttack;
+        set => _canAttack = value;
+    }
 
     private void Awake()
     {
-        _controls = new InputMaster();
-
-        _controls.Player.TapAction.performed += _ =>
-        {
-            _isTapped = true;
-            _isHolding = true;
-        };
-
-        _controls.Player.TapAction.canceled += _ =>
-        {
-            _isTapped = false;
-            _isHolding = false;
-            _heldTime = 0;
-        };
-
-        _moveDestination = transform.position;
+        _playerInput = GetComponent<PlayerInput>();
+        _playerMovement = GetComponent<PlayerMovement>();
+        
+        RayCastCenter = (Vector3.up / 2);
     }
 
     private void Update()
     {
-        if (_performingAction)
-        {
-            return;
-        }
-        
-        if (_isHolding)
-        {
-            _heldTime += Time.deltaTime;
-            if (_heldTime >= HeldTimeThreshold)
-            {
-                _doubleTapWait = 0;
-                HoldAction();
-            }
-        }
-        
-        if (_isTapped)
-        {
-            if (Time.time - _tapTime < DoubleTapTime)
-            {
-                _isDoubleTaping = true;
-                _doubleTapWait = 0;
-                DoubleAction();
-            }
-            _tapTime = Time.time;
-            
-            if (!_isDoubleTaping)
-            {
-                _doubleTapWait += Time.deltaTime;
-            }
-        }
-
-        if (_doubleTapWait > 0 && !_isHolding)
-        {
-            
-            _doubleTapWait += Time.deltaTime;
-            if (_doubleTapWait >= DoubleTapWaitThreshold)
-            {
-                _doubleTapWait = 0;
-                _isDoubleTaping = false;
-                SingleAction();
-            }
-        }
-        
-        _isTapped = false;
-        _isDoubleTaping = false;
+        CheckInFront();
+        Debug.DrawRay((transform.position + RayCastCenter), transform.forward, Color.yellow);
+        _playerInput.CheckInput();
     }
 
     private void FixedUpdate()
     {
-        if (_moveForward || _rotate)
-        {
-            _performingAction = true;
-        }
+        _playerMovement.DoMovement();
+    }
 
-        if (!_performingAction)
-        {
-            return;
-        }
-        
-        if (_moveForward)
-        {
-            transform.position = Vector3.MoveTowards(
-                transform.position,
-                _moveDestination,
-                _moveSpeed * Time.deltaTime
-            );
-
-            if (transform.position == _moveDestination)
+    public void CheckInFront()
+    {
+        if (Physics.Raycast(
+            (transform.position + RayCastCenter),
+            transform.forward, 
+                out var hit,
+                1f
+        )) {
+            // Debug.Log(hit.transform.gameObject.name);
+            var checkTag = hit.transform.gameObject.tag;
+            if (checkTag.Equals("Wall"))
             {
-                _moveForward = false;
-                _performingAction = false;
+                CanMoveForward = false;
+                CanAttack = false;
+            }
+
+            if (checkTag.Equals("Enemy"))
+            {
+                CanMoveForward = false;
+                CanAttack = true;
             }
         }
-
-        if (_rotate)
+        else
         {
-            transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                _rotationTarget,
-                _rotateSpeed * Time.deltaTime
-            );
-
-            if (transform.rotation == _rotationTarget)
-            {
-                _rotate = false;
-                _performingAction = false;
-            }
+            CanMoveForward = true;
+            CanAttack = false;
         }
     }
-
-    private void SingleAction()
+    
+    public bool CanTeleport()
     {
-        if (_rotate)
-        {
-            return;
-        }
-        
-        Debug.Log("SingleAction");
-        _rotate = true;
-        _rotationTarget = Quaternion.Euler(
-            0, 
-            transform.eulerAngles.y - 90f,
-            0
-        );
+        return true;
     }
 
-    private void DoubleAction()
+    public bool CanTeleportThisFrame()
     {
-        if (_rotate)
-        {
-            return;
-        }
-
-        Debug.Log("DoubleAction");
-        _rotate = true;
-        _rotationTarget = Quaternion.Euler(
-            0, 
-            transform.eulerAngles.y + 90f,
-            0
-        );
+        return !(PerformingAction);
     }
 
-    private void HoldAction()
+    public void Teleport(Portal portal)
     {
-        if (_moveDestination == transform.position)
-        {
-            Debug.Log("HoldAction");
-            _moveForward = true;
-                   
-            var forward = transform.forward;
-                    
-            _moveDestination = new Vector3(
-                _moveDestination.x + forward.x,
-                _moveDestination.y + forward.y,
-                _moveDestination.z + forward.z
-            );
-        }
-       
+        transform.position = portal.transform.position;
+        portal.DisableTeleport();
+        _playerMovement.ResetMoveDestination();
     }
 
-    private void OnEnable()
+    public void Rotate(float deg)
     {
-        _controls.Enable();
+        _playerMovement.SetRotate(deg);
     }
 
-    private void OnDisable()
+    public void MoveForward()
     {
-        _controls.Disable();
+        _playerMovement.MoveForward();
+    }
+
+    public void ResetMoveDestination()
+    {
+        _playerMovement.ResetMoveDestination();
     }
 }
