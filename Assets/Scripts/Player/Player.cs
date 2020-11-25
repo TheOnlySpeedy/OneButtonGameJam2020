@@ -113,6 +113,7 @@ namespace Player
 
         public void MoveForward()
         {
+            IsFleeing();
             _playerMovement.MoveForward();
         }
 
@@ -140,6 +141,14 @@ namespace Player
         {
             _performingAction = true;
             _playerMovement.UndoMovement();
+        }
+
+        private void IsFleeing()
+        {
+            if (_playerAttack.CurrentHP < _playerAttack.MaxHP)
+            {
+                _playerAttack.Fleeing();
+            }
         }
     }
 }

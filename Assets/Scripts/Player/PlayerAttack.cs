@@ -58,11 +58,22 @@ namespace Player
             }
         }
 
+        public void Fleeing()
+        {
+            UndoFight();
+            Enemy.UndoFight();
+        }
+
         private void Die()
         {
-            CurrentHP = MaxHP;
+            UndoFight();
             _player.UndoFight();
             Enemy.UndoFight();
+        }
+
+        private void UndoFight()
+        {
+            CurrentHP = MaxHP;
         }
     }
 }
