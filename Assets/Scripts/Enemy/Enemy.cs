@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem.Layouts;
 
 namespace Enemy
 {
@@ -9,6 +10,10 @@ namespace Enemy
         public float MaxHP;
         public float CurrentHP;
         public float Damage;
+
+        private Animator _animator;
+        private Player.Player _player;
+        private bool _updateLookAt;
 
         private void Awake()
         {
@@ -26,10 +31,22 @@ namespace Enemy
             {
                 Damage = 1;
             }
+
+            _animator = GetComponent<Animator>();
         }
 
-        public void CauseDamage(float damage, Player.Player player)
+        private void Update()
         {
+            if (_updateLookAt && _player)
+            {
+                _updateLookAt = false;
+                transform.LookAt(_player.transform);
+            }
+        }
+
+        public void TakeDamage(float damage, Player.Player player)
+        {
+            _player = player;
             CurrentHP -= damage;
             if (CurrentHP <= 0)
             {
@@ -38,18 +55,24 @@ namespace Enemy
                 return;
             }
 
-            StartCoroutine(InflictDamage(player));
+            _updateLookAt = true;
+            StartCoroutine(AttackBack());
+        }
+
+        IEnumerator AttackBack()
+        {
+            yield return new WaitForSeconds(0.5f);
+            _animator.Play("Attack");
+        }
+
+        public void Attack()
+        {
+            _player.TakeDamage(Damage);
         }
 
         private void Die()
         {
             Destroy(gameObject);
-        }
-
-        IEnumerator InflictDamage(Player.Player player)
-        {
-            yield return new WaitForSeconds(0.5f);
-            player.TakeDamage(Damage);
         }
 
         public void UndoFight()

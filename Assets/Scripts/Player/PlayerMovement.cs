@@ -1,4 +1,5 @@
 using System;
+using UnityEditor.Timeline.Actions;
 using UnityEngine;
 
 namespace Player
@@ -11,7 +12,7 @@ namespace Player
         private float _rotateSpeed = 180f; // rotation degree per second
         [SerializeField] private Vector3 _moveDestination;
         private Quaternion _rotationTarget;
-        private Vector3 _previousField;
+        [SerializeField] private Vector3 _previousField;
 
         [SerializeField] private bool _moveForward = false;
         [SerializeField] private bool _rotate = false;
@@ -22,6 +23,8 @@ namespace Player
             _player = GetComponent<Player>();
 
             _moveDestination = transform.position;
+            
+            
         }
 
         // Update is called once per frame

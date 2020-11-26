@@ -9,6 +9,8 @@ namespace Player
         private PlayerInput _playerInput;
         private PlayerMovement _playerMovement;
 
+        private Animator _animator;
+
         [SerializeField] private bool _performingAction;
         public bool PerformingAction
         {
@@ -40,6 +42,8 @@ namespace Player
             _playerAttack = GetComponent<PlayerAttack>();
             _playerInput = GetComponent<PlayerInput>();
             _playerMovement = GetComponent<PlayerMovement>();
+
+            _animator = GetComponent<Animator>();
 
             RayCastCenter = (Vector3.up / 2);
         }
@@ -122,9 +126,9 @@ namespace Player
             _playerMovement.ResetMoveDestination();
         }
 
-        public void Attack()
+        public void DoAttack()
         {
-            _playerAttack.Attack();
+            _animator.Play("Attack");
         }
 
         public void FinishedAttack()

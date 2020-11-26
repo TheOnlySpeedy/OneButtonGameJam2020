@@ -127,7 +127,7 @@ namespace Player
             if (_player.CanAttack)
             {
                 _player.PerformingAction = true;
-                _player.Attack();
+                _player.DoAttack();
             }
         }
 

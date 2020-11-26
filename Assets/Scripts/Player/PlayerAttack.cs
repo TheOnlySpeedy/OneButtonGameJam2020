@@ -33,15 +33,9 @@ namespace Player
         
         public void Attack()
         {
-            StartCoroutine(_Attack());
-        }
-
-        IEnumerator _Attack()
-        {
-            yield return new WaitForSeconds(0.5f);
             if (Enemy)
             {
-                Enemy.CauseDamage(_damage, _player);
+                Enemy.TakeDamage(_damage, _player);
             }
         }
 
@@ -54,8 +48,14 @@ namespace Player
             }
             else
             {
-                _player.FinishedAttack();
+                StartCoroutine(AttackDelay());
             }
+        }
+
+        IEnumerator AttackDelay()
+        {
+            yield return new WaitForSeconds(0.3f);
+            _player.FinishedAttack();
         }
 
         public void Fleeing()
